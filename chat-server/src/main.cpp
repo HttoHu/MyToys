@@ -6,8 +6,9 @@
 #include "../includes/def.hpp"
 #include "../includes/net.hpp"
 
-#define LOCAL_IP "192.168.31.158"
-#define PORT "1234"
+#define LOCAL_IP "0.0.0.0"
+#define PORT "12345"
+
 pthread_mutex_t client_mutex;
 std::set<int> client_table;
 void process_client(int clientfd,Htto::Net::IpAddr client_addr)
