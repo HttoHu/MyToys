@@ -10,6 +10,8 @@
 #include <thread>
 #include <mutex>
 
+#include "./json_parser.hpp"
+
 using namespace std;
 void err(const std::string &msg)
 {
@@ -24,14 +26,19 @@ namespace config
 }
 
 int sockfd;
+sockaddr_in saddr;
+
 // return socketfd
+int reconnect()
+{
+    return connect(sockfd, (sockaddr *)&saddr, sizeof(saddr)) != -1;
+}
 int set_up_connection()
 {
     int ret = socket(AF_INET, SOCK_STREAM, 0);
     if (ret == -1)
         return ret;
 
-    sockaddr_in saddr;
     memset(&saddr, 0, sizeof(saddr));
 
     saddr.sin_family = AF_INET;
@@ -121,7 +128,15 @@ int main()
         if (input == "exit")
             break;
         if (!send_msg(input))
-            cout << ">: 发送失败\n";
+        {
+            close(sockfd);
+            set_up_connection();
+            if (!send_msg(input))
+            {
+                cout << ">: 发送失败\n";
+            }
+            std::cout << "[我]:" << input << "\n";
+        }
         else
             std::cout << "[我]:" << input << "\n";
     }
