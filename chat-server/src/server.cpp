@@ -7,16 +7,28 @@
 #include <cstring>
 #include <map>
 #include <unistd.h>
-#include "./server.h"
-
+#include <thread>
+#include "../includes/server.h"
+#include "../includes/thread_pool.h"
 namespace Glob
 {
     // server socket fd
     extern int sfd;
     extern int port;
     extern int max_connections;
+    extern int work_threads;
 }
 std::map<std::string, Handler> handler_table;
+
+// CallBackParams
+void CallBackParams::respose(JSON json) const
+{
+    std::string data = json.to_string();
+    int len = data.size();
+    len = htonl(len);
+    write(fd, &len, sizeof(len));
+    write(fd, data.c_str(), ntohl(len));
+}
 
 template <typename T>
 struct PointerGuard
@@ -78,7 +90,7 @@ std::string read_package(int fd)
     len = ntohl(len);
     if (len < 0 || len > 1024 * 1024)
     {
-        std::cerr << "invalid package size!\n";
+        std::cerr << len << " invalid package size!\n";
         return "";
     }
     std::string ret(len, 0);
@@ -87,6 +99,15 @@ std::string read_package(int fd)
     std::cout << "Msg: " << ret << "\n";
     return ret;
 }
+
+void print_handler()
+{
+    std::cout << "[";
+    for (auto [str, _] : handler_table)
+        std::cout << str << " ";
+    std::cout << "]";
+}
+
 int run_server()
 {
     int epfd = epoll_create(512);
@@ -98,6 +119,8 @@ int run_server()
     cur_event.events = EPOLLIN;
     cur_event.data.fd = Glob::sfd;
     epoll_ctl(epfd, EPOLL_CTL_ADD, Glob::sfd, &cur_event);
+
+    ThreadPool thread_pool(Glob::work_threads);
 
     while (true)
     {
@@ -134,7 +157,6 @@ int run_server()
                 {
                     int cfd = events[i].data.fd;
                     std::string content = read_package(cfd);
-
                     if (content.empty())
                     {
                         epoll_ctl(epfd, EPOLL_CTL_DEL, cfd, NULL);
@@ -142,7 +164,8 @@ int run_server()
                         close(cfd);
                         continue;
                     }
-                    std::string req_name = "hello";
+                    JSON json(content);
+                    std::string req_name = json["req"].get_str();
 
                     auto it = handler_table.find(req_name);
                     if (it == handler_table.end())
@@ -150,7 +173,8 @@ int run_server()
                         std::cout << "No req " << req_name << " handler !\n";
                         continue;
                     }
-                    it->second(CallBackParams{content, cfd});
+                    std::cout << "Run " << it->first << " \n";
+                    thread_pool.enqueue(it->second, CallBackParams(content, cfd));
                 }
                 catch (std::exception &e)
                 {

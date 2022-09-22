@@ -5,8 +5,8 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <cstring>
-#include "./server.h"
-#include "./json.h"
+#include "../includes/server.h"
+#include "../includes/json.h"
 
 namespace Glob
 {
@@ -15,16 +15,15 @@ namespace Glob
 
 int load_config(const std::string &conf_path);
 
-void hello_handler(CallBackParams cp)
-{
-    JSON res = JSON::map({
-        {"content", JSON::val("Hello World!")},
-        {"fd", JSON::val(cp.fd)},
-    });
-    auto res_str = res.to_string();
-    write(cp.fd, res_str.c_str(), res_str.size());
-}
+void print_handler();
 
+namespace Test
+{
+    void import_test();
+}
+namespace User{
+    void import_user();
+}
 int main(int argc, char *argv[])
 {
     if (argc != 2)
@@ -48,8 +47,11 @@ int main(int argc, char *argv[])
         std::cerr << "\033[032mset server success\n\033[0m";
     }
 
-    add_handler("hello", hello_handler);
+    Test::import_test();
+    User::import_user();
 
+    print_handler();
+    std::cout << "\n";
     run_server();
     return 0;
 }

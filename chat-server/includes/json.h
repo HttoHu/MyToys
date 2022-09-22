@@ -25,12 +25,12 @@ public:
     JSON(JSON &&rhs);
 
     JSON &operator=(const JSON &rhs);
-    JSON &operator=(JSON &&rhs)noexcept;
+    JSON &operator=(JSON &&rhs) noexcept;
 
     JSONTYPE get_type() const;
 
-    int64_t& get_int()const;
-    std::string& get_str()const;
+    int64_t &get_int() const;
+    std::string &get_str() const;
     std::vector<unsigned char> &get_raw() const;
 
     std::map<std::string, JSON> get_map() const;
@@ -38,6 +38,8 @@ public:
 
     JSON operator[](const std::string &str);
     JSON operator[](size_t idx);
+    // to test a map if has a specific key
+    bool has(const std::string &str) const;
 
     void add_pair(const std::string &str, JSON);
     void push(JSON);

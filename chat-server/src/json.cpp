@@ -6,7 +6,7 @@
 #include <fstream>
 #include <cstring>
 
-#include "./json.h"
+#include "../includes/json.h"
 
 namespace
 {
@@ -18,10 +18,10 @@ namespace
             switch (ch)
             {
             case '\"':
-                ret+="\\\"";
+                ret += "\\\"";
                 break;
             case '\'':
-                ret+="\\\'";
+                ret += "\\\'";
                 break;
             case '\r':
                 ret += "\\r";
@@ -244,8 +244,8 @@ namespace Parser
     {
     public:
         Node(NodeType nt);
-        int64_t& get_int();
-        std::string& get_str();
+        int64_t &get_int();
+        std::string &get_str();
         std::vector<unsigned char> &get_raw();
         Node *at(const std::string &str)
         {
@@ -257,6 +257,8 @@ namespace Parser
         }
         Node *operator[](const std::string &str);
         Node *operator[](size_t idx);
+
+        bool has_key(const std::string &str);
 
         NodeType get_type() const { return type; }
         virtual ~Node();
@@ -270,8 +272,8 @@ namespace Parser
     public:
         Unit(const std::string &str) : Node(STRING), is_number(false), text(str) {}
         Unit(int64_t v) : Node(INT), is_number(true), integer(v) {}
-        static int64_t& get_integer(Node *node);
-        static std::string& get_str(Node *node);
+        static int64_t &get_integer(Node *node);
+        static std::string &get_str(Node *node);
         ~Unit(){};
 
     private:
@@ -286,6 +288,10 @@ namespace Parser
         Node *operator[](const std::string &str) const;
         ~Group();
         size_t count() const;
+        bool has_key(const std::string &str) const
+        {
+            return member_table.count(str);
+        }
 
     private:
         friend class ::JSON;
@@ -496,7 +502,7 @@ namespace Parser
 {
     // Node
     Node::Node(NodeType nt) : type(nt) {}
-    int64_t& Node::get_int()
+    int64_t &Node::get_int()
     {
         if (type == INT)
         {
@@ -516,7 +522,7 @@ namespace Parser
             throw std::runtime_error("type not matched excepted a bytes");
         }
     }
-    std::string& Node::get_str()
+    std::string &Node::get_str()
     {
         if (type == STRING)
         {
@@ -525,12 +531,14 @@ namespace Parser
         else
             throw std::runtime_error("type not matched");
     }
+
     Node *Node::operator[](const std::string &str)
     {
         if (type != GROUP)
         {
             throw std::runtime_error("type not matched, expected an array!");
         }
+        
         return static_cast<Group *>(this)->operator[](str);
     }
     Node *Node::operator[](size_t idx)
@@ -539,13 +547,21 @@ namespace Parser
             throw std::runtime_error("type not matched, expected an array!");
         return static_cast<Array *>(this)->operator[](idx);
     }
+    bool Node::has_key(const std::string &str)
+    {
+        if (type != GROUP)
+        {
+            throw std::runtime_error("type not matched, expected an array!");
+        }
+        return static_cast<Group *>(this)->has_key(str);
+    }
     Node::~Node() {}
     // Unit
-    int64_t& Unit::get_integer(Node *node)
+    int64_t &Unit::get_integer(Node *node)
     {
         return static_cast<Unit *>(node)->integer;
     }
-    std::string& Unit::get_str(Node *node)
+    std::string &Unit::get_str(Node *node)
     {
         return static_cast<Unit *>(node)->text;
     }
@@ -566,7 +582,7 @@ namespace Parser
     {
         return elements.size();
     }
-    //Group
+    // Group
     Group::Group(const std::map<std::string, Node *> &tab) : Node(GROUP), member_table(tab) {}
     Node *Group::operator[](const std::string &str) const
     {
@@ -697,7 +713,7 @@ JSON &JSON::operator=(const JSON &rhs)
     node = rhs.node;
     return *this;
 }
-JSON &JSON::operator=(JSON &&rhs)noexcept
+JSON &JSON::operator=(JSON &&rhs) noexcept
 {
     child = rhs.child;
     rhs.child = true;
@@ -709,11 +725,11 @@ JSON::JSONTYPE JSON::get_type() const
 {
     return (JSONTYPE)node->get_type();
 }
-int64_t& JSON::get_int()const
+int64_t &JSON::get_int() const
 {
     return node->get_int();
 }
-std::string& JSON::get_str()const
+std::string &JSON::get_str() const
 {
     return node->get_str();
 }
@@ -753,6 +769,14 @@ JSON JSON::operator[](const std::string &str)
 JSON JSON::operator[](size_t idx)
 {
     return JSON(node->operator[](idx));
+}
+bool JSON::has(const std::string &str) const
+{
+    if (get_type() != GROUP)
+    {
+        throw std::runtime_error("JSON::has_key type not matched expected a map");
+    }
+    return static_cast<Parser::Group *>(node)->has_key(str);
 }
 
 void JSON::add_pair(const std::string &str, JSON json)
@@ -895,7 +919,7 @@ JSON JSON::val(const std::string &str)
 }
 JSON JSON::array(const std::vector<JSON> &vec)
 {
-    //vector<JSON> -> vector<Node*>
+    // vector<JSON> -> vector<Node*>
     std::vector<Parser::Node *> tmp;
     for (auto item : vec)
     {
@@ -907,7 +931,7 @@ JSON JSON::array(const std::vector<JSON> &vec)
 }
 JSON JSON::map(const std::map<std::string, JSON> &table)
 {
-    //vector<JSON> -> vector<Node*>
+    // vector<JSON> -> vector<Node*>
     std::map<std::string, Parser::Node *> tmp;
     for (auto item : table)
     {

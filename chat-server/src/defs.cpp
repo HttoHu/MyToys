@@ -4,4 +4,5 @@ namespace Glob
     int sfd;
     int port;
     int max_connections;
+    int work_threads;
 }

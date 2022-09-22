@@ -1,0 +1,16 @@
+{
+    "user_list": {
+        "Htto": {
+            "friends": [
+            ],
+            "is_admin": 1,
+            "password": "12345"
+        },
+        "LittleFF": {
+            "friends": [
+            ],
+            "is_admin": 0,
+            "password": "kkkk"
+        }
+    }
+}
