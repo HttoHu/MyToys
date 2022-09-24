@@ -10,6 +10,10 @@ define COM_INS
 @$(cc) -c $< -o $@
 endef
 
+# Dependencies
+user_dep = server.h json.h user_model.h
+
+
 all:$(target)
 
 obj/defs.o:$(addprefix ./src/,defs.cpp)
@@ -20,7 +24,9 @@ obj/server.o:$(addprefix ./src/,server.cpp) $(addprefix includes/,server.h)
 	$(COM_INS)
 obj/utils.o:$(addprefix ./src/,utils.cpp)
 	$(COM_INS)
-obj/user.o:$(addprefix ./src/,user.cpp) $(addprefix includes/,server.h json.h)
+obj/user.o:$(addprefix ./src/,user.cpp) $(addprefix includes/,$(user_dep))
+	$(COM_INS)
+obj/user_model.o: $(addprefix ./src/,user_model.cpp) $(addprefix includes/,user_model.h)
 	$(COM_INS)
 obj/json.o:$(addprefix ./src/,json.cpp)
 	$(COM_INS)

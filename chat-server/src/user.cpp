@@ -3,76 +3,27 @@
 #include <string>
 #include <map>
 #include <mutex>
+#include <shared_mutex>
 #include <fstream>
 
 #include "../includes/json.h"
 #include "../includes/server.h"
-
-const std::string user_list_path = "./data/user_list.json";
-
-std::mutex file_mux;
-
-JSON &user_info()
-{
-    static JSON json = JSON::read_from_file("./data/user_list.json");
-    return json;
-}
+#include "../includes/user_model.h"
 
 namespace User
 {
-    // basic funcitons
-    int_least16_t write_back()
+    UserTable &user_table()
     {
-        std::lock_guard<std::mutex> lk(file_mux);
-        std::ofstream ofs(user_list_path);
-        if (!ofs.good())
-        {
-            std::cerr << "open file " + user_list_path + " failed!\n";
-            return -1;
-        }
-        ofs << user_info().to_string();
-        return 0;
-    }
-    bool find_user(const std::string &username, JSON &ret)
-    {
-        JSON user_lists = user_info()["user_list"];
-        if (!user_lists.has(username))
-            return false;
-        ret = user_lists[username];
-        return true;
-    }
-    int add_user(const std::string &username, const std::string &password)
-    {
-        auto usr_lst = user_info()["user_list"];
-        if (usr_lst.has(username))
-            return -1;
-
-        JSON user = JSON::map({
-            {"password", JSON::val(password)},
-            {"friends", JSON::array({})},
-            {"is_admin", JSON::val(0)},
-        });
-
-        user_info()["user_list"].add_pair(username, user);
-
-        return write_back();
+        static UserTable usr_tb("./data/user_list.json");
+        return usr_tb;
     }
 
-    bool auth_user(const std::string &username, const std::string &password)
-    {
-        JSON user;
-        if (!find_user(username, user))
-            return false;
-        return user["password"].get_str() == password;
-    }
-    bool check_admin(JSON auth)
+    bool check_login(JSON auth, bool check_admin)
     {
         std::string username = auth["username"].get_str();
         std::string pass = auth["password"].get_str();
-        JSON user;
-        if (!find_user(username, user))
-            return false;
-        return user["is_admin"].get_int();
+        auto user = user_table().find_user(username);
+        return user && user->password == pass && (!check_admin || user->is_admin);
     }
 
     // interface
@@ -90,23 +41,25 @@ namespace User
             std::string new_username = req["new-username"].get_str();
             std::string new_password = req["new-password"].get_str();
 
-            JSON user;
-
-            if (!check_admin(auth))
+            if (!check_login(auth, true))
             {
-                cp.respose(JSON::map({{"success", JSON::val(-1)}}));
+                cp.respose(JSON::map({{"success", JSON::val(0)},{"password",JSON::val("username or password incorrect")}}));
                 return;
             }
-            if (find_user(new_username, user))
+            if (user_table().find_user(new_username) != std::nullopt)
             {
-                cp.respose(JSON::map({{"success", JSON::val(-1)}}));
+                cp.respose(JSON::map({{"success", JSON::val(0)},
+                                      {"message", JSON::val("user existed!")}}));
                 return;
             }
-            cp.respose(JSON::map({{"success", JSON::val(add_user(new_username, new_password))}}));
+            std::cout << "Good boy!\n";
+            cp.respose(JSON::map({{"success", JSON::val(1 + user_table().add_user(new_username, new_password))}}));
         }
         catch (std::exception &e)
         {
             std::cerr << e.what() << "\n";
+            cp.respose(JSON::map({{"success", JSON::val(-1)},
+                                  {"message", JSON::val("request failed!")}}));
         }
     }
 

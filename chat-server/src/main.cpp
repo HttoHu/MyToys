@@ -21,10 +21,12 @@ namespace Test
 {
     void import_test();
 }
-namespace User{
+namespace User
+{
     void import_user();
 }
-int main(int argc, char *argv[])
+
+int run_main(int argc, char *argv[])
 {
     if (argc != 2)
     {
@@ -54,4 +56,12 @@ int main(int argc, char *argv[])
     std::cout << "\n";
     run_server();
     return 0;
+}
+
+int run_test(){
+    return 1;
+}
+int main(int argc, char *argv[])
+{
+    return run_main(argc,argv);
 }

@@ -1,4 +1,6 @@
 #include <iostream>
+#include <functional>
+
 #include "../includes/json.h"
 
 namespace Glob

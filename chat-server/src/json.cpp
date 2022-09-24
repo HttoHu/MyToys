@@ -339,7 +339,10 @@ namespace Lexer
     // number or string
     long long get_number(const std::string &str, int &i)
     {
-        long long v = str[i] - '0';
+        int sign = 1;
+        if (str[i] == '-')
+            sign *= -1, i++;
+        long long v = sign * (str[i] - '0');
         i++;
         while (i < str.size() && isdigit(str[i]))
         {
@@ -394,7 +397,7 @@ namespace Lexer
         for (int i = 0; i < str.size(); i++)
         {
             char ch = str[i];
-            if (isdigit(ch))
+            if (ch == '-' || isdigit(ch))
             {
                 token_stream->push(new Integer(get_number(str, i)));
                 continue;
@@ -538,7 +541,7 @@ namespace Parser
         {
             throw std::runtime_error("type not matched, expected an array!");
         }
-        
+
         return static_cast<Group *>(this)->operator[](str);
     }
     Node *Node::operator[](size_t idx)
