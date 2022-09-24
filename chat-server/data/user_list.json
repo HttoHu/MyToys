@@ -1,7 +1,11 @@
 {
+    "goupe_list": {
+    },
     "user_list": {
         "Htto": {
             "friends": [
+                "Htto",
+                "LittleFF"
             ],
             "is_admin": 1,
             "password": "12345",
@@ -9,6 +13,7 @@
         },
         "LittleFF": {
             "friends": [
+                "LittleFF"
             ],
             "is_admin": 0,
             "password": "kkkk",

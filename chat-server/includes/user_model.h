@@ -53,4 +53,11 @@ namespace User
         JSON file_json;
     };
 
+    class UserConnection
+    {
+    public:
+    private:
+        UserModel *user;
+        int fd;
+    };
 }

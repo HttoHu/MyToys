@@ -58,10 +58,16 @@ int run_main(int argc, char *argv[])
     return 0;
 }
 
-int run_test(){
-    return 1;
+int run_test()
+{
+    JSON js;
+    js.add_pair("123", JSON::val(123));
+    js["123"].get_int() = 44;
+    std::cout << js.to_string() << "\n";
+    return 0;
 }
 int main(int argc, char *argv[])
 {
-    return run_main(argc,argv);
+    // return run_test();
+    return run_main(argc, argv);
 }

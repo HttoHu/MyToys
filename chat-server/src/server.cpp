@@ -6,8 +6,11 @@
 #include <string>
 #include <cstring>
 #include <map>
+#include <shared_mutex>
 #include <unistd.h>
 #include <thread>
+#include <errno.h>
+
 #include "../includes/server.h"
 #include "../includes/thread_pool.h"
 namespace Glob
@@ -18,6 +21,9 @@ namespace Glob
     extern int max_connections;
     extern int work_threads;
 }
+
+std::map<int,std::shared_mutex> cfd_mux_tab;
+
 std::map<std::string, Handler> handler_table;
 
 // CallBackParams
@@ -119,7 +125,6 @@ int run_server()
     cur_event.events = EPOLLIN;
     cur_event.data.fd = Glob::sfd;
     epoll_ctl(epfd, EPOLL_CTL_ADD, Glob::sfd, &cur_event);
-
     ThreadPool thread_pool(Glob::work_threads);
 
     while (true)
@@ -136,13 +141,16 @@ int run_server()
             {
                 // client address
                 sockaddr_in caddr;
-                socklen_t caddr_len;
+                // prevent errno 22 QAQ
+                memset(&caddr, 0, sizeof(caddr));
+
+                socklen_t caddr_len = 0;
                 int cfd = accept(Glob::sfd, (sockaddr *)&caddr, &caddr_len);
                 caddr.sin_addr.s_addr = caddr.sin_addr.s_addr;
 
                 if (cfd == -1)
                 {
-                    std::cerr << "invalid client!\n";
+                    std::cerr <<Glob::sfd<<" invalid client! errno! "<<errno<<"\n";
                     continue;
                 }
                 std::cout << "rev connect from: " << inet_ntoa((caddr.sin_addr)) << "\n";
