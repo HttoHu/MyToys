@@ -1,13 +1,14 @@
 #pragma once
+#include <queue>
 #include "json.h"
 namespace Message
 {
-    class Message
+    class MessageUnit
     {
     public:
     private:
         JSON content;
-        std::string from;
-        std::string to;
+        time_t time_val;
     };
+    using MessageQueue = std::queue<MessageUnit>;
 }
