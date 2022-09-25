@@ -69,18 +69,21 @@ namespace User
         ofs << file_json.to_string();
     }
 
-    void UserTable::add_friend(const std::string &user, const std::string &new_friend)
+    int UserTable::add_friend(const std::string &user, const std::string &new_friend)
     {
         std::lock_guard<std::shared_mutex> lk(tab_mux);
         auto it = tab.find(user);
         if (it == tab.end())
-            throw std::range_error("invalid user " + new_friend + "\n");
+        {
+            return -1;
+        }
         if (it->second.friends.count(new_friend))
-            throw std::range_error("you have added " + new_friend + "\n");
-        
+        {
+            return -1;
+        }
         it->second.friends.insert(new_friend);
         it->second.get_src_json()["friends"].push(JSON::val(new_friend));
         write_back();
-        
+        return 0;
     }
 }

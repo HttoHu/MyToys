@@ -32,6 +32,8 @@ obj/json.o:$(addprefix ./src/,json.cpp)
 	$(COM_INS)
 obj/test.o:$(addprefix ./src/,test.cpp) $(addprefix includes/,server.h)
 	$(COM_INS)
+obj/message.o:$(addprefix ./src/,message.cpp) $(addprefix includes/,message.h server.h user_model.h thread_pool.h)
+	$(COM_INS)
 $(target):$(OBJ)
 	@$(cc) -g $^ -o $(target) -lpthread
 	@echo "\033[33m 生成完毕\033[0m"

@@ -10,6 +10,16 @@ namespace Glob
     extern int work_threads;
 }
 
+namespace Utils
+{
+    JSON gen_response_message(int success, const std::string &msg, int no)
+    {
+        return JSON::map({{"success", JSON::val(success)},
+                          {"message", JSON::val(msg)},
+                          {"no", JSON::val(no)}});
+    }
+}
+
 int load_config(const std::string &conf_path)
 {
     try

@@ -6,7 +6,7 @@
 #include <fstream>
 #include <cstring>
 
-#include "../includes/json.h"
+#include "json.h"
 
 namespace
 {

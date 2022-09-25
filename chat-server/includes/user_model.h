@@ -37,9 +37,9 @@ namespace User
 
         int add_user(const std::string &username, const std::string &passowrd);
 
-        std::optional<UserModel> find_user(const std::string &username);
+        int add_friend(const std::string &user, const std::string &new_friend);
 
-        void add_friend(const std::string &user, const std::string &new_friend);
+        std::optional<UserModel> find_user(const std::string &username);
 
     private:
         std::string json_path;

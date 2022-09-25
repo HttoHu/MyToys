@@ -13,6 +13,7 @@
 
 #include "../includes/server.h"
 #include "../includes/thread_pool.h"
+// ============================ decls ===============================
 namespace Glob
 {
     // server socket fd
@@ -21,20 +22,19 @@ namespace Glob
     extern int max_connections;
     extern int work_threads;
 }
+namespace User
+{
+    extern std::map<std::string, int> username_fd_tab;
+    extern std::map<int, std::string> fd_username_tab;
+    extern std::shared_mutex username_fd_tab_mux;
+}
+// ============================ end decl ===============================
+// ============================ defs ===============================
+std::map<int, std::mutex> cfd_mux_tab;
 
-std::map<int,std::shared_mutex> cfd_mux_tab;
+ThreadPool *thread_pool = nullptr;
 
 std::map<std::string, Handler> handler_table;
-
-// CallBackParams
-void CallBackParams::respose(JSON json) const
-{
-    std::string data = json.to_string();
-    int len = data.size();
-    len = htonl(len);
-    write(fd, &len, sizeof(len));
-    write(fd, data.c_str(), ntohl(len));
-}
 
 template <typename T>
 struct PointerGuard
@@ -51,6 +51,22 @@ struct PointerGuard
     bool is_array;
 };
 
+// ============================ defs ===============================
+void send_json(int fd, JSON json)
+{
+    std::string data = json.to_string();
+    int len = data.size();
+    len = htonl(len);
+    std::lock_guard<std::mutex> lk(cfd_mux_tab[fd]);
+    write(fd, &len, sizeof(len));
+    write(fd, data.c_str(), ntohl(len));
+}
+void CallBackParams::respose(JSON json) const
+{
+    send_json(fd, json);
+}
+
+// ============================ functions ===============================
 int set_up_connection()
 {
     int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -76,6 +92,9 @@ int set_up_connection()
         return -1;
     }
     Glob::sfd = fd;
+
+    thread_pool = new ThreadPool(Glob::work_threads);
+
     return 0;
 }
 
@@ -102,7 +121,6 @@ std::string read_package(int fd)
     std::string ret(len, 0);
     while (cnt < len)
         cnt += read(fd, ret.data() + cnt, len - cnt);
-    std::cout << "Msg: " << ret << "\n";
     return ret;
 }
 
@@ -125,7 +143,6 @@ int run_server()
     cur_event.events = EPOLLIN;
     cur_event.data.fd = Glob::sfd;
     epoll_ctl(epfd, EPOLL_CTL_ADD, Glob::sfd, &cur_event);
-    ThreadPool thread_pool(Glob::work_threads);
 
     while (true)
     {
@@ -150,7 +167,7 @@ int run_server()
 
                 if (cfd == -1)
                 {
-                    std::cerr <<Glob::sfd<<" invalid client! errno! "<<errno<<"\n";
+                    std::cerr << Glob::sfd << " invalid client! errno! " << errno << "\n";
                     continue;
                 }
                 std::cout << "rev connect from: " << inet_ntoa((caddr.sin_addr)) << "\n";
@@ -168,8 +185,19 @@ int run_server()
                     if (content.empty())
                     {
                         epoll_ctl(epfd, EPOLL_CTL_DEL, cfd, NULL);
-                        std::cout << "Client closed socket!\n";
+
                         close(cfd);
+                        std::cout << "client closed socket " << cfd << "\n";
+                        
+                        std::lock_guard<std::shared_mutex> lk(User::username_fd_tab_mux);
+
+                        auto it = User::fd_username_tab.find(cfd);
+                        if (it == User::fd_username_tab.end())
+                            continue;
+                        std::cout << "remove user " << it->second << "\n";
+                        User::username_fd_tab.erase(it->second);
+                        User::fd_username_tab.erase(it);
+
                         continue;
                     }
                     JSON json(content);
@@ -181,8 +209,7 @@ int run_server()
                         std::cout << "No req " << req_name << " handler !\n";
                         continue;
                     }
-                    std::cout << "Run " << it->first << " \n";
-                    thread_pool.enqueue(it->second, CallBackParams(content, cfd));
+                    thread_pool->enqueue(it->second, CallBackParams(content, cfd));
                 }
                 catch (std::exception &e)
                 {
@@ -193,3 +220,5 @@ int run_server()
         }
     }
 }
+
+// ============================end functions ===============================

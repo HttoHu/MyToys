@@ -1,5 +1,5 @@
 {
     "port": 6832,
     "max_connections": 10,
-    "work_threads": 2
+    "work_threads": 4
 }

@@ -25,7 +25,9 @@ namespace User
 {
     void import_user();
 }
-
+namespace Message{
+    void import_message();
+}
 int run_main(int argc, char *argv[])
 {
     if (argc != 2)
@@ -51,7 +53,8 @@ int run_main(int argc, char *argv[])
 
     Test::import_test();
     User::import_user();
-
+    Message::import_message();
+    
     print_handler();
     std::cout << "\n";
     run_server();
