@@ -87,6 +87,11 @@ namespace Message
             }
             cp.respose(gen_response_message(1, "okay " + dest, no));
             // push to message queue
+            JSON send_msg;
+            
+            send_msg.add_pair("type", JSON::val("message"));
+            send_msg.add_pair("from", auth["username"].clone());
+
             message_queue.push(MessageUnit(dest, content, MessageType::COMMON));
             return;
         }

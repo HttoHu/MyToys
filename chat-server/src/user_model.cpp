@@ -34,7 +34,7 @@ namespace User
         if (tab.count(username))
             return -1;
         auto new_user = UserModel(username, passowrd);
-        file_json["user_list"].add_pair(username, new_user.get_src_json());
+        file_json["user_list"].add_pair(username, new_user.get_src_json().clone());
         write_back();
         return 0;
     }

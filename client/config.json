@@ -2,7 +2,5 @@
     "auth": {
         "password": "12345",
         "username": "Htto"
-    },
-    "friends": [
-    ]
+    }
 }

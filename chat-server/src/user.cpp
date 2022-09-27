@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include <mutex>
+#include <unistd.h>
 #include <shared_mutex>
 #include <fstream>
 
@@ -139,10 +140,39 @@ namespace User
         }
     }
 
+    void get_friend_list(const CallBackParams &cp)
+    {
+        using namespace Utils;
+        try
+        {
+            JSON req(cp.content);
+            // res
+            auto auth = req["auth"];
+            int no = req["no"].get_int();
+            auto username = auth["username"].get_str();
+
+            if (!check_login(auth))
+            {
+                cp.respose(gen_response_message(0, "invalid user", no));
+                return;
+            }
+            auto usr = user_table().find_user(username);
+            auto ret = gen_response_message(1, "okay", no);
+            ret.add_pair("friends", usr->get_src_json()["friends"].clone());
+            std::cout << ret.to_string() << std::endl;
+            cp.respose(ret);
+        }
+        catch (std::exception &e)
+        {
+            cp.respose(gen_response_message(0, "invalid request", 0));
+        }
+    }
+
     void import_user()
     {
         add_handler("user-create", create_user);
         add_handler("user-add_friend", add_friend);
+        add_handler("user-get_friends_list", get_friend_list);
         add_handler("user-login", login);
     }
 }

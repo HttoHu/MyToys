@@ -11,6 +11,8 @@ define COM_INS
 endef
 
 all:$(target)
+obj/chat.o:$(addprefix ./src/,chat.cpp defs.h)
+	$(COM_INS)
 obj/connection.o:$(addprefix ./src/,connection.cpp defs.h)
 	$(COM_INS)
 obj/defs.o:$(addprefix ./src/,defs.cpp json.h)

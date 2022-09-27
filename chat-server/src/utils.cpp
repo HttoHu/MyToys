@@ -16,6 +16,7 @@ namespace Utils
     {
         return JSON::map({{"success", JSON::val(success)},
                           {"message", JSON::val(msg)},
+                          {"type", JSON::val("response")},
                           {"no", JSON::val(no)}});
     }
 }

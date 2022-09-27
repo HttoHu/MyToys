@@ -2,7 +2,8 @@
 
 namespace UI
 {
-    void login();
+    int login();
     void init();
+    void create_config();
     void main_page();
 }

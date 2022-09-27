@@ -599,7 +599,9 @@ namespace Parser
     Group::~Group()
     {
         for (auto it : member_table)
+        {
             delete it.second;
+        }
     }
     size_t Group::count() const
     {
