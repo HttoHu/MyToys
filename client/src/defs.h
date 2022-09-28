@@ -2,6 +2,7 @@
 #include "json.h"
 #include <condition_variable>
 #include <mutex>
+#include <queue>
 
 #define VIS_LEN 4096
 void send_json(JSON json);
@@ -20,6 +21,12 @@ namespace Glob
     // ms
     extern int max_wait_time;
     extern bool vis[VIS_LEN];
-    extern std::map<std::string, JSON> msg_tab;
+
+    
+    extern std::string cur_chat_people;
+    extern std::mutex msg_tab_mutex;
+    extern std::condition_variable msg_tab_cv;
+
+    extern std::map<std::string, std::queue<JSON>> msg_tab;
     extern std::map<int, JSON> response_tab;
 }

@@ -21,7 +21,7 @@ obj/json.o:$(addprefix ./src/,json.cpp json.h)
 	$(COM_INS)
 obj/main.o:$(addprefix ./src/,main.cpp ui.h defs.h)
 	$(COM_INS)
-obj/ui.o:$(addprefix ./src/,ui.cpp ui.h json.h defs.h)
+obj/ui.o:$(addprefix ./src/,ui.cpp ui.h json.h defs.h utils.h)
 	$(COM_INS)
 
 $(target):$(OBJ)

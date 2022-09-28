@@ -19,6 +19,11 @@ namespace Glob
     int max_wait_time = 5000;
 
     bool vis[VIS_LEN];
-    std::map<std::string,JSON> msg_tab;
+
+    std::string cur_chat_people;
+    std::map<std::string, std::queue<JSON>> msg_tab;
+    std::mutex msg_tab_mutex;
+    std::condition_variable msg_tab_cv;
+
     std::map<int, JSON> response_tab;
 }

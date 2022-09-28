@@ -159,7 +159,6 @@ namespace User
             auto usr = user_table().find_user(username);
             auto ret = gen_response_message(1, "okay", no);
             ret.add_pair("friends", usr->get_src_json()["friends"].clone());
-            std::cout << ret.to_string() << std::endl;
             cp.respose(ret);
         }
         catch (std::exception &e)

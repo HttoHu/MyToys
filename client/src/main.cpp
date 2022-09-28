@@ -15,7 +15,7 @@ void rev_msg()
     while (true)
     {
         auto json = recv_json();
-        std::cout << json.to_string() << std::endl;
+
         {
             std::string type = json["type"].get_str();
             if (type == "response")
@@ -30,14 +30,39 @@ void rev_msg()
             }
             else
             {
-                std::lock_guard<std::mutex> lk(Glob::message_mutex);
-                // sender username
-                std::string from = json["from"].get_str();
-                Glob::msg_tab.insert({from, json});
+                bool okay = false;
+                {
+                    std::lock_guard<std::mutex> lk(Glob::msg_tab_mutex);
+                    // sender username
+                    std::string from = json["from"].get_str();
+                    Glob::msg_tab[from].push(json);
+                    okay = Glob::cur_chat_people.size();
+                }
+                if (okay)
+                {
+                    Glob::msg_tab_cv.notify_all();
+                }
             }
         }
     }
 }
+
+void chat_msg_listenner()
+{
+    while (true)
+    {
+        std::unique_lock<std::mutex> lk(Glob::msg_tab_mutex);
+        Glob::msg_tab_cv.wait(lk);
+        auto &q = Glob::msg_tab[Glob::cur_chat_people];
+        while (!q.empty())
+        {
+            auto msg = std::move(q.front());
+            q.pop();
+            std::cout << "[" << Glob::cur_chat_people << "]:" << msg["content"]["content"].get_str() << "\n";
+        }
+    }
+}
+
 int main()
 {
     int cnt = 5;
@@ -51,7 +76,9 @@ int main()
     if (cnt == 0)
         return 0;
     UI::init();
+
     std::thread th(rev_msg);
+    std::thread th2(chat_msg_listenner);
 
     int login_res;
     while ((login_res = UI::login()) == 0)
@@ -60,9 +87,9 @@ int main()
         UI::create_config();
         UI::init();
     }
-    if(login_res == -1)
+    if (login_res == -1)
     {
-        std::cout<<"登录失败!,服务器超时\n";
+        std::cout << "登录失败!,服务器超时\n";
         exit(1);
     }
     UI::main_page();

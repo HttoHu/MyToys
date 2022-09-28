@@ -7,9 +7,12 @@
 #include <chrono>
 #include <unistd.h>
 #include "defs.h"
+#include "utils.h"
 namespace Chat
 {
     bool request_friend_list();
+    bool send_message(const std::string &msg, const std::string &dest);
+
 }
 namespace UI
 {
@@ -21,9 +24,23 @@ namespace UI
     }
     void chat_page(std::string username)
     {
+        Glob::cur_chat_people = username;
+        getchar();
         clear_screen();
-        while(true){
-            
+
+        Guarder gurder([&]()
+                       { Glob::cur_chat_people = ""; });
+
+        while (true)
+        {
+            std::cout << ":";
+            std::string send_msg;
+            getline(std::cin, send_msg);
+
+            if (send_msg == "#Q")
+                return;
+            if (!Chat::send_message(send_msg, Glob::cur_chat_people))
+                std::cout << "[系统消息]:发送消息失败!\n";
         }
     }
     void friends_page()
@@ -41,15 +58,15 @@ namespace UI
         }
 
         clear_screen();
-        auto friends = Glob::user_config()["friends"].borrow();
-        int len = friends.length();
-        for (int i = 0; i < len; i++)
-        {
-            std::cout << i + 1 << ". " << friends[i].get_str() << "\n";
-        }
-        std::cout << "B. 返回\n";
         while (true)
         {
+            auto friends = Glob::user_config()["friends"].borrow();
+            int len = friends.length();
+            for (int i = 0; i < len; i++)
+            {
+                std::cout << i + 1 << ". " << friends[i].get_str() << "\n";
+            }
+            std::cout << "B. 返回\n";
             std::cout << "[输入数字或B]:";
             std::string input;
             std::cin >> input;
@@ -65,12 +82,12 @@ namespace UI
                 std::cout << "请输入数字" << std::endl;
                 continue;
             }
-            if (num >= len)
+            if (num > len)
             {
                 std::cout << "非法输入\n";
                 continue;
             }
-            chat_page(friends[num].get_str());
+            chat_page(friends[num - 1].get_str());
         }
     }
     void main_page()
