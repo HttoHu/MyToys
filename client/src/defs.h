@@ -13,7 +13,7 @@ void rev_msg();
 
 void chat_msg_listenner();
 
-std::optional<JSON> wait_response(int no);
+JSON wait_response(int no);
 namespace Chat
 {
     void push_chat_message(const std::string &friend_name, const std::string &msg);

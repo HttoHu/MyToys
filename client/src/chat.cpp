@@ -21,12 +21,12 @@ namespace Chat
                        5000ms;
 
         auto ret = wait_response(cur_no);
-        if (!ret)
+        if (!ret.count())
             return false;
-        int status = (*ret)["success"].get_int();
+        int status = ret["success"].get_int();
         if (status)
         {
-            Glob::user_config().add_pair("friends", (*ret)["friends"].clone());
+            Glob::user_config().add_pair("friends", ret["friends"].clone());
             return true;
         }
         return false;
@@ -54,7 +54,7 @@ namespace Chat
                        5000ms;
 
         auto json = wait_response(cur_no);
-        if (!json || !(*json)["success"].get_int())
+        if (!json.count() || !json["success"].get_int())
             return false;
         return true;
     }

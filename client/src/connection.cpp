@@ -89,7 +89,7 @@ void chat_msg_listenner()
     }
 }
 
-std::optional<JSON> wait_response(int no)
+JSON wait_response(int no)
 {
     using namespace std::chrono_literals;
 
@@ -103,7 +103,7 @@ std::optional<JSON> wait_response(int no)
         if (!Glob::notifier.wait_until(lk, timeout, [&]() -> bool
                                        { return Glob::vis[no % VIS_LEN]; }))
         {
-            return std::nullopt;
+            return ret;
         }
 
         ret = Glob::response_tab[no % VIS_LEN];
