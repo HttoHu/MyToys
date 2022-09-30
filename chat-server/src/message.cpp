@@ -59,7 +59,7 @@ namespace Message
                 user_msgbox[mu.get_dest()].push(mu);
                 continue;
             }
-            send_json(fd, mu.get_data());
+            send_json(fd, mu.get_data().clone());
         }
     }
     // ==================== interfaces ==========================
@@ -73,8 +73,7 @@ namespace Message
             auto auth = req["auth"];
             int no = req["no"].get_int();
             std::string dest = req["dest"].get_str();
-            // std::cout << req.to_string() << "\n";
-            JSON content = req["content"];
+            JSON content = req["message"];
             if (!User::check_login(auth))
             {
                 cp.respose(gen_response_message(0, "invalid user", no));
@@ -92,8 +91,8 @@ namespace Message
 
             send_msg.add_pair("type", JSON::val("message"));
             send_msg.add_pair("from", auth["username"].clone());
-            send_msg.add_pair("content", content.clone());
-            message_queue.push(MessageUnit(dest, send_msg, MessageType::COMMON));
+            send_msg.add_pair("message", content.clone());
+            message_queue.push(MessageUnit(dest, send_msg.clone(), MessageType::COMMON));
             return;
         }
         catch (std::exception &e)
@@ -103,9 +102,52 @@ namespace Message
         }
     }
 
+    /*
+        req: basic
+        res: content:[]
+    */
+    void pull_message(const CallBackParams &cp)
+    {
+        using namespace Utils;
+        try
+        {
+            JSON req(cp.content);
+            auto auth = req["auth"];
+            int no = req["no"].get_int();
+            std::string user = auth["username"].get_str();
+
+            if (!User::check_login(auth))
+            {
+                cp.respose(gen_response_message(0, "invalid user", no));
+                return;
+            }
+            auto response = gen_response_message(1, "okay", no);
+
+            auto arr_json = JSON::array({});
+            {
+                std::lock_guard<std::shared_mutex> lk(user_msgbox_mux);
+                auto &q = user_msgbox[user];
+                while (!q.empty())
+                {
+                    arr_json.push(q.front().get_data().clone());
+                    q.pop();
+                }
+            }
+            response.add_pair("content", arr_json);
+            std::cout << "RESPONSE:" << response.to_string() << "\n";
+            cp.respose(response);
+        }
+        catch (std::exception &e)
+        {
+            cp.respose(gen_response_message(0, "invalid user", 0));
+        }
+    }
+
     void import_message()
     {
         add_handler("message-send", send_message);
+
+        add_handler("message-pull_message", pull_message);
 
         thread_pool->enqueue(message_sender);
     }

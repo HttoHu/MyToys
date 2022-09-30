@@ -188,7 +188,7 @@ int run_server()
 
                         close(cfd);
                         std::cout << "client closed socket " << cfd << "\n";
-                        
+
                         std::lock_guard<std::shared_mutex> lk(User::username_fd_tab_mux);
 
                         auto it = User::fd_username_tab.find(cfd);

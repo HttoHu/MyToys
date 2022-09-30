@@ -10,59 +10,6 @@
 #include "defs.h"
 int set_up_connection();
 
-void rev_msg()
-{
-    while (true)
-    {
-        auto json = recv_json();
-
-        {
-            std::string type = json["type"].get_str();
-            if (type == "response")
-            {
-                {
-                    int no = json["no"].get_int();
-                    Glob::vis[no % VIS_LEN] = 1;
-                    std::lock_guard<std::mutex> lk(Glob::message_mutex);
-                    Glob::response_tab[no % VIS_LEN] = json;
-                }
-                Glob::notifier.notify_all();
-            }
-            else
-            {
-                bool okay = false;
-                {
-                    std::lock_guard<std::mutex> lk(Glob::msg_tab_mutex);
-                    // sender username
-                    std::string from = json["from"].get_str();
-                    Glob::msg_tab[from].push(json);
-                    okay = Glob::cur_chat_people.size();
-                }
-                if (okay)
-                {
-                    Glob::msg_tab_cv.notify_all();
-                }
-            }
-        }
-    }
-}
-
-void chat_msg_listenner()
-{
-    while (true)
-    {
-        std::unique_lock<std::mutex> lk(Glob::msg_tab_mutex);
-        Glob::msg_tab_cv.wait(lk);
-        auto &q = Glob::msg_tab[Glob::cur_chat_people];
-        while (!q.empty())
-        {
-            auto msg = std::move(q.front());
-            q.pop();
-            std::cout << "[" << Glob::cur_chat_people << "]:" << msg["content"]["content"].get_str() << "\n";
-        }
-    }
-}
-
 int main()
 {
     int cnt = 5;

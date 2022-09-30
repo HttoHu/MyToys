@@ -12,7 +12,21 @@ namespace Chat
 {
     bool request_friend_list();
     bool send_message(const std::string &msg, const std::string &dest);
-
+    void print_chat_history(const std::string &friend_name);
+    void push_chat_message(const std::string &friend_name, const std::string &msg);
+    std::optional<JSON> pull_message(const std::string &name);
+}
+namespace
+{
+    void prepare_unread_msg(const std::string &name)
+    {
+        auto json = Chat::pull_message(name);
+        if (!json || !(*json)["success"].get_int())
+            return;
+        auto arr = (*json)["content"].get_list();
+        for (auto v : arr)
+            std::cout << "[" << v["from"].get_str() << "]:" << v["content"].get_str() << "\n";
+    }
 }
 namespace UI
 {
@@ -24,23 +38,31 @@ namespace UI
     }
     void chat_page(std::string username)
     {
-        Glob::cur_chat_people = username;
-        getchar();
         clear_screen();
+        Glob::cur_chat_people = username;
+        // notify chat_msg_listenner
+        prepare_unread_msg(username);
+        Glob::msg_tab_cv.notify_one();
+
+        getchar();
+        Chat::print_chat_history(username);
 
         Guarder gurder([&]()
                        { Glob::cur_chat_people = ""; });
-
+        std::cout << "[我]:";
         while (true)
         {
-            std::cout << ":";
             std::string send_msg;
             getline(std::cin, send_msg);
-
             if (send_msg == "#Q")
                 return;
+            std::cout << "[我]:";
+
+            Chat::push_chat_message(username, "[我]:" + send_msg);
             if (!Chat::send_message(send_msg, Glob::cur_chat_people))
+            {
                 std::cout << "[系统消息]:发送消息失败!\n";
+            }
         }
     }
     void friends_page()

@@ -1,5 +1,5 @@
 #include "defs.h"
-
+#include <deque>
 namespace UI
 {
     JSON cons_header(const std::string &method);
@@ -8,6 +8,9 @@ namespace UI
 namespace Chat
 {
     using namespace std::chrono_literals;
+
+    std::map<std::string, std::deque<std::string>> chat_history;
+
     bool request_friend_list()
     {
         int cur_no = Glob::message_cnt;
@@ -17,62 +20,55 @@ namespace Chat
         auto timeout = std::chrono::steady_clock::now() +
                        5000ms;
 
-        JSON tmp;
-        // lock scope
-        {
-            std::unique_lock<std::mutex> lk(Glob::message_mutex);
-            if (!Glob::notifier.wait_until(lk, timeout, [&]() -> bool
-                                           { return Glob::vis[cur_no % VIS_LEN]; }))
-            {
-                return false;
-            }
-
-            tmp = Glob::response_tab[cur_no % VIS_LEN];
-            Glob::vis[cur_no % VIS_LEN] = 0;
-        }
-        int status = tmp["success"].get_int();
+        auto ret = wait_response(cur_no);
+        if (!ret)
+            return false;
+        int status = (*ret)["success"].get_int();
         if (status)
         {
-            Glob::user_config().add_pair("friends", tmp["friends"].clone());
+            Glob::user_config().add_pair("friends", (*ret)["friends"].clone());
             return true;
         }
         return false;
     }
+    std::optional<JSON> pull_message(const std::string &name)
+    {
+        int cur_no = Glob::message_cnt;
+        JSON req = UI::cons_header("message-pull_message");
+        send_json(req.borrow());
+        return wait_response(cur_no);
+    }
+
     bool send_message(const std::string &msg_str, const std::string &dest)
     {
         int cur_no = Glob::message_cnt;
         JSON req = UI::cons_header("message-send");
-        JSON msg = JSON::map({
-            {"content", JSON::val(msg_str)}
-        });
 
         req.add_pair("from", Glob::user_config()["auth"]["username"].clone());
         req.add_pair("dest", JSON::val(dest));
-        req.add_pair("content", msg);
+        req.add_pair("message", JSON::val(msg_str));
 
         send_json(req.borrow());
 
         auto timeout = std::chrono::steady_clock::now() +
                        5000ms;
 
-        JSON tmp;
-        // lock scope
-        {
-            std::unique_lock<std::mutex> lk(Glob::message_mutex);
-            if (!Glob::msg_tab_cv.wait_until(lk, timeout, [&]() -> bool
-                                             { return Glob::vis[cur_no % VIS_LEN]; }))
-            {
-                return false;
-            }
+        auto json = wait_response(cur_no);
+        if (!json || !(*json)["success"].get_int())
+            return false;
+        return true;
+    }
 
-            tmp = Glob::response_tab[cur_no % VIS_LEN];
-            Glob::vis[cur_no % VIS_LEN] = 0;
-        }
-        int status = tmp["success"].get_int();
-        if (status)
+    void print_chat_history(const std::string &friend_name)
+    {
+        auto &q = chat_history[friend_name];
+        for (auto msg : q)
         {
-            return true;
+            std::cout << msg << "\n";
         }
-        return false;
+    }
+    void push_chat_message(const std::string &friend_name, const std::string &msg)
+    {
+        chat_history[friend_name].push_back(msg);
     }
 }
