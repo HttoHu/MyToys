@@ -3,7 +3,6 @@
 #include "json.h"
 #include <fstream>
 #include <string>
-#include <filesystem>
 #include <chrono>
 #include <unistd.h>
 #include "defs.h"
@@ -14,18 +13,22 @@ namespace Chat
     bool send_message(const std::string &msg, const std::string &dest);
     void print_chat_history(const std::string &friend_name);
     void push_chat_message(const std::string &friend_name, const std::string &msg);
-    std::optional<JSON> pull_message(const std::string &name);
+    JSON pull_message(const std::string &name);
 }
 namespace
 {
     void prepare_unread_msg(const std::string &name)
     {
         auto json = Chat::pull_message(name);
-        if (!json || !(*json)["success"].get_int())
+        if (!json.count() || !json["success"].get_int())
             return;
-        auto arr = (*json)["content"].get_list();
+        auto arr = json["content"].get_list();
         for (auto v : arr)
-            std::cout << "[" << v["from"].get_str() << "]:" << v["content"].get_str() << "\n";
+        {
+            std::string msg = "[" + v["from"].get_str() + "]:" + v["message"].get_str();
+            std::cout << msg << "\n";
+            Chat::push_chat_message(v["from"].get_str(), msg);
+        }
     }
 }
 namespace UI
@@ -34,18 +37,20 @@ namespace UI
 
     void clear_screen()
     {
-        std::cout << "\033c";
+#ifndef CLRSCR
+        // std::cout << "\033c";
+#endif
     }
     void chat_page(std::string username)
     {
         clear_screen();
         Glob::cur_chat_people = username;
+        Chat::print_chat_history(username);
         // notify chat_msg_listenner
         prepare_unread_msg(username);
         Glob::msg_tab_cv.notify_one();
 
         getchar();
-        Chat::print_chat_history(username);
 
         Guarder gurder([&]()
                        { Glob::cur_chat_people = ""; });
@@ -61,7 +66,12 @@ namespace UI
             Chat::push_chat_message(username, "[我]:" + send_msg);
             if (!Chat::send_message(send_msg, Glob::cur_chat_people))
             {
-                std::cout << "[系统消息]:发送消息失败!\n";
+                set_up_connection();
+                if (!Chat::send_message(send_msg, Glob::cur_chat_people))
+                {
+                    std::cout << "[系统消息]:发送失败!\n";
+                    continue;
+                }
             }
         }
     }
@@ -110,6 +120,7 @@ namespace UI
                 continue;
             }
             chat_page(friends[num - 1].get_str());
+            Backup::backup_chat_history();
         }
     }
     void main_page()
@@ -165,13 +176,10 @@ namespace UI
     }
     void init()
     {
-        if (!std::filesystem::exists("./config.json"))
-        {
-            create_config();
-        }
         try
         {
             Glob::user_config() = JSON::read_from_file("./config.json");
+            Backup::read_chat_history();
         }
         catch (std::exception &e)
         {

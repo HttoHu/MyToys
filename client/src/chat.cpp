@@ -31,7 +31,7 @@ namespace Chat
         }
         return false;
     }
-    std::optional<JSON> pull_message(const std::string &name)
+    JSON pull_message(const std::string &name)
     {
         int cur_no = Glob::message_cnt;
         JSON req = UI::cons_header("message-pull_message");

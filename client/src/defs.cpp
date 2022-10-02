@@ -8,7 +8,8 @@ namespace Glob
         static JSON ret;
         return ret;
     }
-    const char *remote_ip = "127.0.0.1";
+    // const char *remote_ip = "127.0.0.1";
+    const char *remote_ip = "43.154.150.103";
     const int port = 6832;
     int message_cnt = 0;
 

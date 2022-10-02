@@ -5,6 +5,9 @@
 #include <queue>
 
 #define VIS_LEN 4096
+
+int set_up_connection();
+
 void send_json(JSON json);
 
 JSON recv_json();
@@ -14,6 +17,7 @@ void rev_msg();
 void chat_msg_listenner();
 
 JSON wait_response(int no);
+
 namespace Chat
 {
     void push_chat_message(const std::string &friend_name, const std::string &msg);
@@ -38,4 +42,8 @@ namespace Glob
 
     extern std::map<std::string, std::queue<JSON>> msg_tab;
     extern std::map<int, JSON> response_tab;
+}
+namespace Backup{
+    void read_chat_history();
+    bool backup_chat_history();
 }

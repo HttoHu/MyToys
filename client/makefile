@@ -23,6 +23,8 @@ obj/main.o:$(addprefix ./src/,main.cpp ui.h defs.h)
 	$(COM_INS)
 obj/ui.o:$(addprefix ./src/,ui.cpp ui.h json.h defs.h utils.h)
 	$(COM_INS)
+obj/backup.o: $(addprefix ./src/,backup.cpp json.h)
+	$(COM_INS)
 
 $(target):$(OBJ)
 	@$(cc) -g $^ -o $(target) -lpthread

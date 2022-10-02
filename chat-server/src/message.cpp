@@ -134,7 +134,6 @@ namespace Message
                 }
             }
             response.add_pair("content", arr_json);
-            std::cout << "RESPONSE:" << response.to_string() << "\n";
             cp.respose(response);
         }
         catch (std::exception &e)
