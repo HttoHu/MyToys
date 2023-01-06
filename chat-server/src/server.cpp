@@ -201,6 +201,7 @@ int run_server()
                         continue;
                     }
                     JSON json(content);
+                    std::cout<<"Rev: "<<json.to_string()<<"\n";
                     std::string req_name = json["req"].get_str();
 
                     auto it = handler_table.find(req_name);

@@ -207,7 +207,7 @@ namespace UI
         send_json(msg.borrow());
 
         auto timeout = std::chrono::steady_clock::now() +
-                       500ms;
+                       5000ms;
         std::unique_lock<std::mutex> lk(Glob::message_mutex);
 
         if (!Glob::notifier.wait_until(lk, timeout, [&]() -> bool
